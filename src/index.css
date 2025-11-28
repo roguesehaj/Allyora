@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 340 100% 97%;
+    --foreground: 0 0% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+
+    --primary: 340 100% 68%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 340 50% 95%;
+    --secondary-foreground: 340 100% 50%;
+
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 42%;
+
+    --accent: 340 100% 68%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 340 30% 90%;
+    --input: 340 30% 90%;
+    --ring: 340 100% 68%;
+
+    --radius: 1.25rem;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --chart-1: 340 100% 68%;
+    --chart-2: 280 100% 70%;
+    --chart-3: 200 100% 65%;
+    --chart-4: 160 100% 60%;
+    --chart-5: 100 100% 65%;
+  }
+
+  .dark {
+    --background: 340 30% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 340 25% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 340 25% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 340 100% 68%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 340 20% 20%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 340 20% 20%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 340 100% 68%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 340 20% 20%;
+    --input: 340 20% 20%;
+    --ring: 340 100% 68%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --chart-1: 340 100% 68%;
+    --chart-2: 280 100% 70%;
+    --chart-3: 200 100% 65%;
+    --chart-4: 160 100% 60%;
+    --chart-5: 100 100% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
