@@ -3,3 +3,10 @@ dist
 .vercel
 *.log
 .DS_Store
+
+# Environment variables - DO NOT COMMIT THESE
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development

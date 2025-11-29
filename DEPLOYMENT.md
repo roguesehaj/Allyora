@@ -13,6 +13,7 @@ This guide will walk you through deploying your Allyora application to Vercel.
 ### Step 1: Push Your Code to GitHub
 
 1. Initialize git (if not already done):
+
    ```bash
    git init
    git add .
@@ -71,6 +72,7 @@ vercel
 ```
 
 Follow the prompts:
+
 - Set up and deploy? **Yes**
 - Which scope? (Select your account)
 - Link to existing project? **No** (for first deployment)
@@ -90,12 +92,48 @@ vercel --prod
 
 ### Environment Variables
 
-If you need environment variables (for API keys, etc.):
+Your app requires the OpenRouter API key for the chat assistant feature.
 
-1. Go to your project on Vercel dashboard
-2. Navigate to **Settings** → **Environment Variables**
-3. Add your variables
-4. Redeploy
+#### Setting Up OpenRouter API Key
+
+1. **Get an API Key**:
+
+   - Go to [https://openrouter.ai/keys](https://openrouter.ai/keys)
+   - Sign up or log in
+   - Click "Create Key"
+   - Copy your API key (starts with `sk-or-v1-`)
+
+2. **For Local Development**:
+
+   - Create a `.env` file in the root directory
+   - Add: `VITE_OPENROUTER_API_KEY=sk-or-v1-your-api-key-here`
+   - Restart your dev server: `npm run dev`
+
+3. **For Vercel Deployment**:
+   - Go to your project on Vercel dashboard
+   - Navigate to **Settings** → **Environment Variables**
+   - Click **Add New**
+   - Name: `VITE_OPENROUTER_API_KEY`
+   - Value: Your OpenRouter API key
+   - Select environments: **Production**, **Preview**, and **Development**
+   - Click **Save**
+   - **Redeploy** your application for changes to take effect
+
+#### Important Security Notes
+
+⚠️ **Never commit `.env` files to Git!**
+
+- The `.gitignore` file already excludes `.env` files
+- API keys in `.env.example` are just placeholders
+- Always use Vercel's environment variables for production
+
+#### Without API Key
+
+If you don't set up the API key:
+
+- The chat will show an error message
+- Users can still use other app features
+- Consider using a free tier model or implementing a backend proxy
 
 ### Custom Domain
 
@@ -106,6 +144,7 @@ If you need environment variables (for API keys, etc.):
 ### Build Configuration
 
 The `vercel.json` file is already configured with:
+
 - Correct build command
 - Output directory
 - SPA routing (all routes redirect to index.html)
@@ -113,11 +152,13 @@ The `vercel.json` file is already configured with:
 ### LocalStorage Considerations
 
 ⚠️ **Important**: Your app uses localStorage for data storage. This means:
+
 - Data is stored in the user's browser
 - Data is not synced across devices
 - Data persists even after deployment
 
 For production, consider:
+
 - Migrating to a backend database (Supabase, Firebase, etc.)
 - Adding user authentication
 - Implementing cloud data sync
@@ -133,6 +174,7 @@ For production, consider:
 ### Routes Not Working
 
 The `vercel.json` includes SPA routing configuration. If routes still don't work:
+
 - Verify `vercel.json` is in the root directory
 - Check that rewrites are configured correctly
 
@@ -155,6 +197,7 @@ After deployment:
 ## Continuous Deployment
 
 Vercel automatically deploys when you push to:
+
 - `main` branch → Production
 - Other branches → Preview deployments
 
@@ -181,4 +224,3 @@ vercel list
 - Vercel Docs: https://vercel.com/docs
 - Vercel Discord: https://vercel.com/discord
 - Vite Deployment: https://vitejs.dev/guide/static-deploy.html
-
