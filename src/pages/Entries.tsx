@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getEntries, addEntry, deleteEntry } from "@/lib/mockDb";
+import { getCurrentUser, getEntries, addEntry, editEntry, deleteEntry } from "@/lib/mockDb";
 import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,19 +10,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Trash2, Edit, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { Entry, FlowType } from "@/types";
 
 const Entries = () => {
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<any[]>([]);
+  const [entries, setEntries] = useState<Entry[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [date, setDate] = useState<Date>(new Date());
-  const [flow, setFlow] = useState<string>("medium");
+  const [flow, setFlow] = useState<FlowType>("medium");
   const [pain, setPain] = useState<number>(0);
   const [notes, setNotes] = useState("");
 
@@ -44,26 +46,81 @@ const Entries = () => {
   };
 
   const handleAddEntry = () => {
-    const userId = getCurrentUser();
-    if (!userId) return;
+    try {
+      const userId = getCurrentUser();
+      if (!userId) {
+        toast.error("Please log in to add entries");
+        navigate("/");
+        return;
+      }
 
-    addEntry(userId, {
-      date: format(date, "yyyy-MM-dd"),
-      flow: flow as any,
-      pain,
-      mood: [],
-      symptoms: [],
-      product: "pad",
-      notes,
-    });
+      // Validate date - cannot add future dates
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // End of today
+      if (date > today) {
+        toast.error("Cannot add entries for future dates");
+        return;
+      }
 
-    toast.success("Entry added successfully!");
-    setIsDialogOpen(false);
-    setDate(new Date());
-    setFlow("medium");
-    setPain(0);
-    setNotes("");
-    loadEntries();
+      // Validate date is not too old (optional, e.g., max 2 years)
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      if (date < twoYearsAgo) {
+        toast.error("Cannot add entries older than 2 years");
+        return;
+      }
+
+      const entryDate = format(date, "yyyy-MM-dd");
+
+      // Check for duplicate entries on the same date
+      const existingEntry = entries.find((e) => e.date === entryDate);
+      if (existingEntry) {
+        toast.error("An entry already exists for this date. Please edit the existing entry.");
+        return;
+      }
+
+      // Validate pain level
+      if (pain < 0 || pain > 10) {
+        toast.error("Pain level must be between 0 and 10");
+        return;
+      }
+
+      if (editingEntry) {
+        editEntry(userId, {
+          ...editingEntry,
+          date: entryDate,
+          flow: flow as FlowType,
+          pain,
+          notes: notes.trim(),
+        });
+        toast.success("Entry updated successfully!");
+      } else {
+        addEntry(userId, {
+          date: entryDate,
+          flow: flow as FlowType,
+          pain,
+          mood: [],
+          symptoms: [],
+          product: "pad",
+          notes: notes.trim(),
+        });
+        toast.success("Entry added successfully!");
+      }
+
+      setIsDialogOpen(false);
+      setEditingEntry(null);
+      setDate(new Date());
+      setFlow("medium");
+      setPain(0);
+      setNotes("");
+      loadEntries();
+      
+      // Dispatch event to notify Dashboard
+      window.dispatchEvent(new Event('entriesUpdated'));
+    } catch (error) {
+      console.error("Failed to add entry:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to add entry");
+    }
   };
 
   const handleDeleteEntry = (entryId: string) => {
@@ -73,6 +130,29 @@ const Entries = () => {
     deleteEntry(userId, entryId);
     toast.success("Entry deleted");
     loadEntries();
+    
+    // Dispatch event to notify Dashboard
+    window.dispatchEvent(new Event('entriesUpdated'));
+  };
+
+  const handleEditEntry = (entry: Entry) => {
+    setEditingEntry(entry);
+    setDate(new Date(entry.date));
+    setFlow(entry.flow);
+    setPain(entry.pain);
+    setNotes(entry.notes || "");
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingEntry(null);
+      setDate(new Date());
+      setFlow("medium");
+      setPain(0);
+      setNotes("");
+    }
   };
 
   return (
@@ -83,7 +163,7 @@ const Entries = () => {
             <h1 className="text-2xl font-bold">Period Tracking</h1>
             <p className="text-muted-foreground">Log your cycles</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
             <DialogTrigger asChild>
               <Button size="icon" className="rounded-full">
                 <Plus className="w-5 h-5" />
@@ -91,7 +171,7 @@ const Entries = () => {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Period Entry</DialogTitle>
+                <DialogTitle>{editingEntry ? "Edit Period Entry" : "Add Period Entry"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -156,7 +236,7 @@ const Entries = () => {
                 </div>
 
                 <Button className="w-full rounded-full" onClick={handleAddEntry}>
-                  Add Entry
+                  {editingEntry ? "Update Entry" : "Add Entry"}
                 </Button>
               </div>
             </DialogContent>
@@ -192,13 +272,22 @@ const Entries = () => {
                         <p className="text-sm text-muted-foreground mt-2">{entry.notes}</p>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteEntry(entry.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditEntry(entry)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteEntry(entry.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))

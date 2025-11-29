@@ -1,15 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, TrendingUp } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
+import type { Prediction } from "@/types";
 
 interface PredictionCardProps {
-  prediction: {
-    earliest: string;
-    latest: string;
-    confidence: number;
-    explanation: string;
-    irregularity: number;
-  };
+  prediction: Prediction;
 }
 
 export function PredictionCard({ prediction }: PredictionCardProps) {

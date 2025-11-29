@@ -1,63 +1,145 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getUser, getEntries } from "@/lib/mockDb";
-import { predictFromHistory, predictFromQuiz, computeIrregularity, symptomIndex } from "@/utils/predict";
+import { predictFromHistory, predictFromQuiz, computeIrregularity, symptomIndex, checkHealthAlert, getOvulationAndFertileDates } from "@/utils/predict";
 import { PredictionCard } from "@/components/PredictionCard";
 import { Calendar } from "@/components/Calendar";
 import { AnalyticsTile } from "@/components/AnalyticsTile";
 import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Plus, AlertTriangle } from "lucide-react";
+import type { QuizResponse, Entry, Prediction, FlowType } from "@/types";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const [entries, setEntries] = useState<any[]>([]);
-  const [prediction, setPrediction] = useState<any>(null);
+  const [user, setUser] = useState<QuizResponse | null>(null);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [irregularity, setIrregularity] = useState(0);
   const [symptomScore, setSymptomScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [healthAlert, setHealthAlert] = useState<{ shouldAlert: boolean; message: string; severity: 'low' | 'medium' | 'high' } | null>(null);
 
   useEffect(() => {
-    const userId = getCurrentUser();
-    if (!userId) {
-      navigate("/");
-      return;
-    }
+    const loadData = () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const userId = getCurrentUser();
+        if (!userId) {
+          navigate("/");
+          return;
+        }
 
-    const userData = getUser(userId);
-    if (!userData) {
-      navigate("/");
-      return;
-    }
+        const userData = getUser(userId);
+        if (!userData) {
+          navigate("/");
+          return;
+        }
 
-    setUser(userData);
-    const userEntries = getEntries(userId);
-    setEntries(userEntries);
+        setUser(userData);
+        let userEntries = getEntries(userId);
+        
+        // Include quiz last_period_start if it exists and isn't already an entry
+        if (userData.quiz.last_period_start) {
+          const quizDate = userData.quiz.last_period_start;
+          const quizDateFormatted = new Date(quizDate).toISOString().slice(0, 10);
+          const existsAsEntry = userEntries.some(e => e.date === quizDateFormatted);
+          
+          if (!existsAsEntry) {
+            // Create a virtual entry for the quiz date to display on calendar
+            const virtualEntry: Entry = {
+              id: `quiz_entry_${quizDateFormatted}`,
+              user_id: userId,
+              date: quizDateFormatted,
+              flow: (userData.quiz.flow_description || 'medium') as FlowType,
+              pain: userData.quiz.pain || 0,
+              mood: [],
+              symptoms: [],
+              product: 'pad',
+              notes: 'Initial period date from quiz',
+              created_at: new Date().toISOString(),
+            };
+            userEntries = [...userEntries, virtualEntry];
+          }
+        }
+        setEntries(userEntries);
 
-    // Calculate prediction
-    const startDates = userEntries.map((e: any) => e.date).sort();
-    let pred;
-    if (startDates.length >= 3) {
-      pred = predictFromHistory(startDates, userData.quiz);
-    } else {
-      const lastStart = userData.quiz.last_period_start || null;
-      pred = predictFromQuiz(userData.quiz, lastStart);
-    }
-    setPrediction(pred);
+        // Calculate prediction
+        const startDates = userEntries.map((e) => e.date).sort();
+        let pred: Prediction | null;
+        if (startDates.length >= 3) {
+          pred = predictFromHistory(startDates, userData.quiz);
+        } else {
+          const lastStart = userData.quiz.last_period_start || null;
+          pred = predictFromQuiz(userData.quiz, lastStart, startDates);
+        }
+        setPrediction(pred);
 
-    // Calculate analytics
-    setIrregularity(computeIrregularity(userData.quiz));
-    setSymptomScore(symptomIndex(userData.quiz));
+        // Calculate analytics
+        setIrregularity(computeIrregularity(userData.quiz, startDates));
+        setSymptomScore(symptomIndex(userData.quiz));
+        
+        // Check for health alerts
+        if (pred) {
+          const alert = checkHealthAlert(startDates, pred);
+          setHealthAlert(alert);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard data:", err);
+        setError(err instanceof Error ? err.message : "Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+    
+    // Listen for entries updates
+    const handleEntriesUpdate = () => {
+      loadData();
+    };
+    window.addEventListener('entriesUpdated', handleEntriesUpdate);
+    
+    return () => {
+      window.removeEventListener('entriesUpdated', handleEntriesUpdate);
+    };
   }, [navigate]);
 
   const handleAddEntry = () => {
     navigate("/entries");
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <p className="text-destructive font-medium">Error loading dashboard</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user || !prediction) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">No data available</p>
       </div>
     );
   }
@@ -95,6 +177,39 @@ const Dashboard = () => {
             </svg>
           </Button>
         </div>
+
+        {/* Health Alert */}
+        {healthAlert && healthAlert.shouldAlert && (
+          <Alert 
+            className={
+              healthAlert.severity === 'high' 
+                ? 'border-destructive bg-destructive/10' 
+                : healthAlert.severity === 'medium'
+                ? 'border-warning bg-warning/10'
+                : 'border-primary bg-primary/10'
+            }
+          >
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>
+              {healthAlert.severity === 'high' 
+                ? 'Health Recommendation' 
+                : healthAlert.severity === 'medium'
+                ? 'Cycle Irregularity Notice'
+                : 'Cycle Update'}
+            </AlertTitle>
+            <AlertDescription>{healthAlert.message}</AlertDescription>
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/book")}
+                className="rounded-full"
+              >
+                Book Doctor Consultation
+              </Button>
+            </div>
+          </Alert>
+        )}
 
         {/* Prediction Card */}
         <PredictionCard prediction={prediction} />

@@ -1,79 +1,120 @@
 // src/lib/mockDb.ts
 import sampleDataset from '@/data/sample_dataset.json';
+import type {
+  QuizResponse,
+  Entry,
+  Booking,
+  AllyoraData,
+  UserQuiz,
+  ExportedUserData,
+} from '@/types';
 
 const STORAGE_KEY = 'allyora_data';
 const SEEDED_KEY = 'allyora_seeded';
 
-export interface QuizResponse {
-  user_id: string;
-  quiz: any;
-  created_at: string;
+// Check if localStorage is available
+function isLocalStorageAvailable(): boolean {
+  try {
+    const test = '__storage_test__';
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export interface Entry {
-  id: string;
-  user_id: string;
-  date: string;
-  flow: 'light' | 'medium' | 'heavy';
-  pain: number;
-  mood: string[];
-  symptoms: string[];
-  product: string;
-  notes: string;
-  created_at: string;
-}
-
-export interface Booking {
-  booking_id: string;
-  user_id: string;
-  reason: string;
-  slot: string;
-  join_url: string;
-  created_at: string;
-}
-
-interface AllyoraData {
-  users: QuizResponse[];
-  entries: Entry[];
-  bookings: Booking[];
+// Error class for storage errors
+export class StorageError extends Error {
+  constructor(message: string, public readonly code: string) {
+    super(message);
+    this.name = 'StorageError';
+  }
 }
 
 function initializeDb(): AllyoraData {
-  const seeded = localStorage.getItem(SEEDED_KEY);
-  if (!seeded) {
-    // Seed from sample dataset
-    const data: AllyoraData = sampleDataset as any;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    localStorage.setItem(SEEDED_KEY, 'true');
-    return data;
+  if (!isLocalStorageAvailable()) {
+    console.warn('localStorage is not available. Using in-memory storage.');
+    return { users: [], entries: [], bookings: [] };
   }
-  
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    return JSON.parse(stored);
+
+  try {
+    const seeded = localStorage.getItem(SEEDED_KEY);
+    if (!seeded) {
+      // Seed from sample dataset
+      const data: AllyoraData = sampleDataset as AllyoraData;
+      saveDb(data);
+      localStorage.setItem(SEEDED_KEY, 'true');
+      return data;
+    }
+    
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        return JSON.parse(stored) as AllyoraData;
+      } catch (parseError) {
+        console.error('Failed to parse stored data:', parseError);
+        // Reset corrupted data
+        const defaultData: AllyoraData = { users: [], entries: [], bookings: [] };
+        saveDb(defaultData);
+        return defaultData;
+      }
+    }
+    
+    return { users: [], entries: [], bookings: [] };
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    return { users: [], entries: [], bookings: [] };
   }
-  
-  return { users: [], entries: [], bookings: [] };
 }
 
-function saveDb(data: AllyoraData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function saveDb(data: AllyoraData): void {
+  if (!isLocalStorageAvailable()) {
+    console.warn('localStorage is not available. Data not persisted.');
+    return;
+  }
+
+  try {
+    const serialized = JSON.stringify(data);
+    localStorage.setItem(STORAGE_KEY, serialized);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      throw new StorageError(
+        'Storage quota exceeded. Please delete some data or clear your browser storage.',
+        'QUOTA_EXCEEDED'
+      );
+    }
+    throw new StorageError(
+      `Failed to save data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'SAVE_FAILED'
+    );
+  }
 }
 
 function getData(): AllyoraData {
   return initializeDb();
 }
 
-export function createUser(quiz: any): QuizResponse {
-  const data = getData();
-  const user: QuizResponse = {
-    user_id: `user_${Date.now()}`,
-    quiz,
-    created_at: new Date().toISOString(),
-  };
-  data.users.push(user);
-  saveDb(data);
-  return user;
+export function createUser(quiz: UserQuiz): QuizResponse {
+  try {
+    const data = getData();
+    const user: QuizResponse = {
+      user_id: `user_${Date.now()}`,
+      quiz,
+      created_at: new Date().toISOString(),
+    };
+    data.users.push(user);
+    saveDb(data);
+    return user;
+  } catch (error) {
+    if (error instanceof StorageError) {
+      throw error;
+    }
+    throw new StorageError(
+      `Failed to create user: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'CREATE_USER_FAILED'
+    );
+  }
 }
 
 export function getUser(user_id: string): QuizResponse | undefined {
@@ -143,7 +184,7 @@ export function getBookings(user_id: string): Booking[] {
   return data.bookings.filter(b => b.user_id === user_id);
 }
 
-export function exportUserData(user_id: string): any {
+export function exportUserData(user_id: string): ExportedUserData {
   const data = getData();
   const user = data.users.find(u => u.user_id === user_id);
   const entries = data.entries.filter(e => e.user_id === user_id);

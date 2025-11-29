@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { getAllUsers, setCurrentUser } from "@/lib/mockDb";
 import { useEffect, useState } from "react";
-import { Heart, Sparkles, Calendar, TrendingUp } from "lucide-react";
+import { Sparkles, Calendar, TrendingUp } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -28,11 +28,10 @@ const Index = () => {
       <div className="max-w-md w-full space-y-6 animate-fade-in">
         {/* Logo/Brand */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4 animate-bounce-subtle">
-            <Heart className="w-10 h-10 text-primary fill-primary" />
+          <div className="inline-flex items-center justify-center mb-4 animate-bounce-subtle">
+            <img src="/logo.png" alt="Allyora Logo" className="w-48 h-18" />
           </div>
-          <h1 className="text-4xl font-bold text-foreground">Allyora</h1>
-          <p className="text-muted-foreground">Your personal cycle companion</p>
+          <p className="text-muted-foreground">Your Menstrual Ally</p>
         </div>
 
         {/* Main CTA Card */}

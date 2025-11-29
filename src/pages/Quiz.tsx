@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { quizQuestions } from "@/lib/quizQuestions";
 import { QuizCard } from "@/components/QuizCard";
@@ -6,26 +6,48 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { createUser, setCurrentUser } from "@/lib/mockDb";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import type { UserQuiz } from "@/types";
+import { toast } from "sonner";
 
 const Quiz = () => {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<any>({});
+  const [answers, setAnswers] = useState<Partial<UserQuiz>>({});
   const [showingSummary, setShowingSummary] = useState(false);
 
-  const filteredQuestions = quizQuestions.filter((q) => {
-    if (!q.conditional) return true;
-    return answers[q.conditional.field] === q.conditional.value;
-  });
+  const filteredQuestions = useMemo(() => {
+    return quizQuestions.filter((q) => {
+      if (!q.conditional) return true;
+      return answers[q.conditional.field] === q.conditional.value;
+    });
+  }, [answers]);
+
+  // Reset index if it becomes invalid after filtering
+  useEffect(() => {
+    if (currentIndex >= filteredQuestions.length && filteredQuestions.length > 0) {
+      setCurrentIndex(Math.max(0, filteredQuestions.length - 1));
+    }
+  }, [filteredQuestions.length, currentIndex]);
 
   const currentQuestion = filteredQuestions[currentIndex];
-  const progress = ((currentIndex + 1) / filteredQuestions.length) * 100;
+  const progress = filteredQuestions.length > 0 
+    ? ((currentIndex + 1) / filteredQuestions.length) * 100 
+    : 0;
 
-  const handleAnswer = (answer: any) => {
+  const handleAnswer = (answer: string | string[] | number | null) => {
+    if (!currentQuestion) return;
     setAnswers({ ...answers, [currentQuestion.id]: answer });
   };
 
   const handleNext = () => {
+    if (!currentQuestion) return;
+    
+    // Check if required question is answered
+    if (currentQuestion.required && !answers[currentQuestion.id]) {
+      toast.error("This question is required");
+      return;
+    }
+
     if (currentIndex < filteredQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -42,13 +64,22 @@ const Quiz = () => {
   };
 
   const handleSkip = () => {
+    if (currentQuestion?.required) {
+      toast.error("This question is required and cannot be skipped");
+      return;
+    }
     handleNext();
   };
 
   const handleFinish = () => {
-    const user = createUser(answers);
-    setCurrentUser(user.user_id);
-    navigate("/dashboard");
+    try {
+      const user = createUser(answers as UserQuiz);
+      setCurrentUser(user.user_id);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Failed to create user:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save quiz responses");
+    }
   };
 
   if (showingSummary) {
@@ -97,15 +128,17 @@ const Quiz = () => {
         </div>
       </div>
 
-      <div className="p-4 max-w-md mx-auto py-8">
-        <QuizCard
-          question={currentQuestion}
-          answer={answers[currentQuestion.id]}
-          onAnswer={handleAnswer}
-          onNext={handleNext}
-          onSkip={handleSkip}
-        />
-      </div>
+      {currentQuestion && (
+        <div className="p-4 max-w-md mx-auto py-8">
+          <QuizCard
+            question={currentQuestion}
+            answer={answers[currentQuestion.id]}
+            onAnswer={handleAnswer}
+            onNext={handleNext}
+            onSkip={handleSkip}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,10 +1,15 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,8 +23,52 @@ interface QuizCardProps {
   onSkip: () => void;
 }
 
-export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCardProps) {
+export function QuizCard({
+  question,
+  answer,
+  onAnswer,
+  onNext,
+  onSkip,
+}: QuizCardProps) {
   const isAnswered = answer !== undefined && answer !== null && answer !== "";
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Handle Enter key globally for the card
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle Enter key
+      if (e.key !== "Enter") return;
+
+      // Don't trigger if user is typing in an input (let it handle Enter normally)
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Prevent default behavior
+      e.preventDefault();
+
+      // Check if we can proceed
+      if (question.required && !isAnswered) {
+        return; // Can't proceed if required and not answered
+      }
+
+      // Proceed to next
+      onNext();
+    };
+
+    const cardElement = cardRef.current;
+    if (cardElement) {
+      cardElement.addEventListener("keydown", handleKeyDown);
+      return () => {
+        cardElement.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [question.required, isAnswered, onNext]);
 
   const renderInput = () => {
     switch (question.type) {
@@ -29,8 +78,24 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
             type="number"
             value={answer || ""}
             onChange={(e) => onAnswer(Number(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const value = Number((e.target as HTMLInputElement).value);
+                const hasValue =
+                  !isNaN(value) &&
+                  value !== 0 &&
+                  value !== null &&
+                  value !== undefined;
+                if (question.required && !hasValue) {
+                  return;
+                }
+                onNext();
+              }
+            }}
             placeholder="Enter number"
             className="text-lg"
+            autoFocus
           />
         );
 
@@ -40,8 +105,21 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
             type="text"
             value={answer || ""}
             onChange={(e) => onAnswer(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const value = (e.target as HTMLInputElement).value.trim();
+                const hasValue =
+                  value !== "" && value !== null && value !== undefined;
+                if (question.required && !hasValue) {
+                  return;
+                }
+                onNext();
+              }
+            }}
             placeholder="Type your answer"
             className="text-lg"
+            autoFocus
           />
         );
 
@@ -57,14 +135,20 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {answer ? format(new Date(answer), "PPP") : <span>Pick a date</span>}
+                {answer ? (
+                  format(new Date(answer), "PPP")
+                ) : (
+                  <span>Pick a date</span>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
                 selected={answer ? new Date(answer) : undefined}
-                onSelect={(date) => date && onAnswer(format(date, "yyyy-MM-dd"))}
+                onSelect={(date) =>
+                  date && onAnswer(format(date, "yyyy-MM-dd"))
+                }
                 initialFocus
                 className="pointer-events-auto"
               />
@@ -81,6 +165,12 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
                 variant={answer === option.value ? "default" : "outline"}
                 className="w-full justify-start rounded-2xl h-12 text-left"
                 onClick={() => onAnswer(option.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onAnswer(option.value);
+                  }
+                }}
               >
                 {option.label}
               </Button>
@@ -101,6 +191,20 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
                     ? "bg-primary/10 border-primary"
                     : "border-border hover:bg-muted"
                 )}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    const checked = multiAnswer.includes(option.value);
+                    if (checked) {
+                      onAnswer(
+                        multiAnswer.filter((v: string) => v !== option.value)
+                      );
+                    } else {
+                      onAnswer([...multiAnswer, option.value]);
+                    }
+                  }
+                }}
+                tabIndex={0}
               >
                 <Checkbox
                   checked={multiAnswer.includes(option.value)}
@@ -108,7 +212,9 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
                     if (checked) {
                       onAnswer([...multiAnswer, option.value]);
                     } else {
-                      onAnswer(multiAnswer.filter((v: string) => v !== option.value));
+                      onAnswer(
+                        multiAnswer.filter((v: string) => v !== option.value)
+                      );
                     }
                   }}
                 />
@@ -127,6 +233,12 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
                 variant={answer === option.value ? "default" : "outline"}
                 className="h-24 flex-col gap-2 rounded-2xl"
                 onClick={() => onAnswer(option.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onAnswer(option.value);
+                  }
+                }}
               >
                 <span className="text-3xl">{option.image}</span>
                 <span className="text-sm">{option.label}</span>
@@ -137,7 +249,16 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
 
       case "checkbox":
         return (
-          <label className="flex items-start gap-3 p-4 rounded-2xl border cursor-pointer">
+          <label
+            className="flex items-start gap-3 p-4 rounded-2xl border cursor-pointer"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onAnswer(answer !== true);
+              }
+            }}
+            tabIndex={0}
+          >
             <Checkbox
               checked={answer === true}
               onCheckedChange={(checked) => onAnswer(checked === true)}
@@ -152,12 +273,20 @@ export function QuizCard({ question, answer, onAnswer, onNext, onSkip }: QuizCar
   };
 
   return (
-    <Card className="p-6 space-y-6 animate-fade-in shadow-lg">
+    <Card
+      ref={cardRef}
+      className="p-6 space-y-6 animate-fade-in shadow-lg"
+      tabIndex={0}
+    >
       {question.type !== "checkbox" && (
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold leading-tight">{question.question}</h2>
+          <h2 className="text-2xl font-semibold leading-tight">
+            {question.question}
+          </h2>
           {question.questionHindi && (
-            <p className="text-sm text-muted-foreground">{question.questionHindi}</p>
+            <p className="text-sm text-muted-foreground">
+              {question.questionHindi}
+            </p>
           )}
         </div>
       )}
