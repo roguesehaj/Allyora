@@ -91,6 +91,8 @@ export interface AllyoraData {
   entries: Entry[];
   bookings: Booking[];
   doctorArticles: DoctorArticle[];
+  partners: Partner[];
+  partnerConnections: PartnerConnection[];
 }
 
 // LocalStorage Error Types
@@ -99,6 +101,37 @@ export class StorageError extends Error {
     super(message);
     this.name = 'StorageError';
   }
+}
+
+// Partner Types
+export type PartnerType = 'spouse' | 'family' | 'healthcare' | 'other';
+
+export interface Partner {
+  id: string;
+  user_id: string; // Owner of the data
+  partner_name: string;
+  partner_type: PartnerType;
+  share_code: string; // Unique code for connection
+  permissions: {
+    view_entries: boolean;
+    view_predictions: boolean;
+    view_analytics: boolean;
+    view_quiz: boolean;
+  };
+  connected_at: string;
+  last_accessed?: string;
+  is_active: boolean;
+}
+
+export interface PartnerConnection {
+  id: string;
+  share_code: string;
+  partner_name: string;
+  partner_type: PartnerType;
+  connected_user_id: string; // User who shared the data (owner)
+  viewer_user_id?: string; // User who is viewing the data (optional, for tracking)
+  connected_at: string;
+  permissions: Partner['permissions'];
 }
 
 // Export User Data Type

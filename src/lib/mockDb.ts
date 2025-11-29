@@ -9,6 +9,9 @@ import type {
   UserQuiz,
   ExportedUserData,
   DoctorArticle,
+  Partner,
+  PartnerConnection,
+  PartnerType,
 } from '@/types';
 
 const STORAGE_KEY = 'allyora_data';
@@ -38,14 +41,14 @@ export class StorageError extends Error {
 function initializeDb(): AllyoraData {
   if (!isLocalStorageAvailable()) {
     console.warn('localStorage is not available. Using in-memory storage.');
-    return { users: [], entries: [], bookings: [], doctorArticles: [] };
+    return { users: [], entries: [], bookings: [], doctorArticles: [], partners: [], partnerConnections: [] };
   }
 
   try {
     const seeded = localStorage.getItem(SEEDED_KEY);
     if (!seeded) {
       // Seed from sample dataset
-      const data: AllyoraData = { ...(sampleDataset as AllyoraData), doctorArticles: [] };
+      const data: AllyoraData = { ...(sampleDataset as AllyoraData), doctorArticles: [], partners: [], partnerConnections: [] };
       saveDb(data);
       localStorage.setItem(SEEDED_KEY, 'true');
       return data;
@@ -55,10 +58,10 @@ function initializeDb(): AllyoraData {
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as AllyoraData;
-        // Ensure doctorArticles exists for backward compatibility
-        if (!parsed.doctorArticles) {
-          parsed.doctorArticles = [];
-        }
+        // Ensure all arrays exist for backward compatibility
+        if (!parsed.doctorArticles) parsed.doctorArticles = [];
+        if (!parsed.partners) parsed.partners = [];
+        if (!parsed.partnerConnections) parsed.partnerConnections = [];
         
         // Seed demo doctor articles if not already seeded
         const doctorArticlesSeeded = localStorage.getItem(DOCTOR_ARTICLES_SEEDED_KEY);
@@ -72,20 +75,20 @@ function initializeDb(): AllyoraData {
       } catch (parseError) {
         console.error('Failed to parse stored data:', parseError);
         // Reset corrupted data
-        const defaultData: AllyoraData = { users: [], entries: [], bookings: [], doctorArticles: [] };
+        const defaultData: AllyoraData = { users: [], entries: [], bookings: [], doctorArticles: [], partners: [], partnerConnections: [] };
         saveDb(defaultData);
         return defaultData;
       }
     }
     
     // First time initialization - seed demo doctor articles
-    const data: AllyoraData = { users: [], entries: [], bookings: [], doctorArticles: [...demoDoctorArticles] };
+    const data: AllyoraData = { users: [], entries: [], bookings: [], doctorArticles: [...demoDoctorArticles], partners: [], partnerConnections: [] };
     saveDb(data);
     localStorage.setItem(DOCTOR_ARTICLES_SEEDED_KEY, 'true');
     return data;
   } catch (error) {
     console.error('Failed to initialize database:', error);
-    return { users: [], entries: [], bookings: [], doctorArticles: [] };
+    return { users: [], entries: [], bookings: [], doctorArticles: [], partners: [], partnerConnections: [] };
   }
 }
 
@@ -302,4 +305,196 @@ export function ensureDoctorArticlesSeeded(): void {
       localStorage.setItem(DOCTOR_ARTICLES_SEEDED_KEY, 'true');
     }
   }
+}
+
+// Partner Management Functions
+
+// Generate a unique share code
+function generateShareCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing chars
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+// Create a partner share (user shares their data)
+export function createPartnerShare(
+  userId: string,
+  partnerName: string,
+  partnerType: PartnerType,
+  permissions: Partner['permissions']
+): Partner {
+  const data = getData();
+  
+  // Check if share code already exists
+  let shareCode = generateShareCode();
+  while (data.partners.some(p => p.share_code === shareCode)) {
+    shareCode = generateShareCode();
+  }
+  
+  const partner: Partner = {
+    id: `partner_${Date.now()}`,
+    user_id: userId,
+    partner_name: partnerName,
+    partner_type: partnerType,
+    share_code: shareCode,
+    permissions,
+    connected_at: new Date().toISOString(),
+    is_active: true,
+  };
+  
+  data.partners.push(partner);
+  saveDb(data);
+  return partner;
+}
+
+// Get all partners for a user (people they've shared with)
+export function getUserPartners(userId: string): Partner[] {
+  const data = getData();
+  return data.partners.filter(p => p.user_id === userId && p.is_active);
+}
+
+// Connect to a partner using share code (someone connects to view your data)
+export function connectToPartner(
+  shareCode: string,
+  partnerName: string,
+  partnerType: PartnerType,
+  viewerUserId?: string
+): PartnerConnection {
+  const data = getData();
+  
+  // Find the partner share
+  const partner = data.partners.find(p => p.share_code === shareCode && p.is_active);
+  if (!partner) {
+    throw new Error('Invalid share code');
+  }
+  
+  // Check if already connected by this viewer
+  const existing = data.partnerConnections.find(
+    pc => pc.share_code === shareCode && 
+          (viewerUserId ? pc.viewer_user_id === viewerUserId : pc.partner_name === partnerName)
+  );
+  if (existing) {
+    return existing;
+  }
+  
+  const connection: PartnerConnection = {
+    id: `connection_${Date.now()}`,
+    share_code: shareCode,
+    partner_name: partnerName,
+    partner_type: partnerType,
+    connected_user_id: partner.user_id,
+    viewer_user_id: viewerUserId,
+    connected_at: new Date().toISOString(),
+    permissions: partner.permissions,
+  };
+  
+  data.partnerConnections.push(connection);
+  saveDb(data);
+  
+  // Update partner last accessed
+  partner.last_accessed = new Date().toISOString();
+  saveDb(data);
+  
+  return connection;
+}
+
+// Get partner connections
+// If userId provided: returns connections where this user shared their data (people viewing your data)
+// If no userId: returns all connections
+// Use getViewerConnections to get connections where current user is viewing someone else's data
+export function getPartnerConnections(userId?: string): PartnerConnection[] {
+  const data = getData();
+  if (userId) {
+    return data.partnerConnections.filter(pc => pc.connected_user_id === userId);
+  }
+  return data.partnerConnections;
+}
+
+// Get connections where current user is viewing someone else's data
+export function getViewerConnections(viewerUserId: string): PartnerConnection[] {
+  const data = getData();
+  return data.partnerConnections.filter(pc => pc.viewer_user_id === viewerUserId);
+}
+
+// Get a specific partner connection by ID
+export function getPartnerConnection(connectionId: string): PartnerConnection | null {
+  const data = getData();
+  return data.partnerConnections.find(pc => pc.id === connectionId) || null;
+}
+
+// Revoke a partner share
+export function revokePartnerShare(userId: string, partnerId: string): void {
+  const data = getData();
+  const partner = data.partners.find(p => p.id === partnerId && p.user_id === userId);
+  if (!partner) {
+    throw new Error('Partner not found');
+  }
+  
+  partner.is_active = false;
+  
+  // Remove all connections using this share code
+  data.partnerConnections = data.partnerConnections.filter(
+    pc => pc.share_code !== partner.share_code
+  );
+  
+  saveDb(data);
+}
+
+// Remove a partner connection (disconnect from someone's data)
+export function removePartnerConnection(connectionId: string): void {
+  const data = getData();
+  data.partnerConnections = data.partnerConnections.filter(pc => pc.id !== connectionId);
+  saveDb(data);
+}
+
+// Get shared user data for a partner connection
+export function getSharedUserData(connectionId: string): { data: ExportedUserData; connection: PartnerConnection } | null {
+  const data = getData();
+  const connection = data.partnerConnections.find(pc => pc.id === connectionId);
+  if (!connection) {
+    return null;
+  }
+  
+  const user = data.users.find(u => u.user_id === connection.connected_user_id);
+  if (!user) {
+    return null;
+  }
+  
+  const sharedData: ExportedUserData = {
+    user: connection.permissions.view_quiz ? user : undefined,
+    entries: connection.permissions.view_entries 
+      ? data.entries.filter(e => e.user_id === connection.connected_user_id)
+      : [],
+    bookings: [], // Bookings are not shared
+  };
+  
+  return { data: sharedData, connection };
+}
+
+// Update partner permissions
+export function updatePartnerPermissions(
+  userId: string,
+  partnerId: string,
+  permissions: Partner['permissions']
+): Partner {
+  const data = getData();
+  const partner = data.partners.find(p => p.id === partnerId && p.user_id === userId);
+  if (!partner) {
+    throw new Error('Partner not found');
+  }
+  
+  partner.permissions = permissions;
+  
+  // Update all connections with this share code
+  data.partnerConnections.forEach(pc => {
+    if (pc.share_code === partner.share_code) {
+      pc.permissions = permissions;
+    }
+  });
+  
+  saveDb(data);
+  return partner;
 }

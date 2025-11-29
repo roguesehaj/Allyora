@@ -12,6 +12,7 @@ import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
 import ArticleSubmit from "./pages/ArticleSubmit";
 import ArticleAdmin from "./pages/ArticleAdmin";
+import PartnerDataView from "./pages/PartnerDataView";
 import Chat from "./pages/Chat";
 import Book from "./pages/Book";
 import Partner from "./pages/Partner";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/chat" element={<Chat />} />
             <Route path="/book" element={<Book />} />
             <Route path="/partner" element={<Partner />} />
+            <Route path="/partner/view/:connectionId" element={<PartnerDataView />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
