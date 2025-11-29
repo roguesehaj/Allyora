@@ -65,11 +65,32 @@ export interface Prediction {
   explanation: string;
 }
 
+// Doctor Article Types
+export interface DoctorArticle {
+  id: string;
+  title: string;
+  category: "Menstrual Health" | "Sleep" | "Fitness" | "Nutrition";
+  readTime: number;
+  image: string;
+  excerpt: string;
+  content: string;
+  author: {
+    name: string;
+    credentials: string;
+    specialization?: string;
+  };
+  submittedBy: string; // doctor_id
+  status: "pending" | "approved" | "rejected";
+  submittedAt: string;
+  approvedAt?: string;
+}
+
 // Database Types
 export interface AllyoraData {
   users: QuizResponse[];
   entries: Entry[];
   bookings: Booking[];
+  doctorArticles: DoctorArticle[];
 }
 
 // LocalStorage Error Types

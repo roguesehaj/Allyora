@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import Entries from "./pages/Entries";
 import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
+import ArticleSubmit from "./pages/ArticleSubmit";
+import ArticleAdmin from "./pages/ArticleAdmin";
 import Chat from "./pages/Chat";
 import Book from "./pages/Book";
 import Partner from "./pages/Partner";
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/entries" element={<Entries />} />
             <Route path="/articles" element={<Articles />} />
+            <Route path="/articles/submit" element={<ArticleSubmit />} />
+            <Route path="/articles/admin" element={<ArticleAdmin />} />
             <Route path="/article/:id" element={<ArticleDetail />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/book" element={<Book />} />

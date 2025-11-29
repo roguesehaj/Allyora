@@ -6,6 +6,15 @@ export interface Article {
   image: string;
   excerpt: string;
   content: string;
+  author?: {
+    name: string;
+    credentials: string;
+    specialization?: string;
+  };
+  isDoctorApproved?: boolean;
+  submittedBy?: string; // doctor_id for submitted articles
+  status?: "pending" | "approved" | "rejected";
+  submittedAt?: string;
 }
 
 export const articles: Article[] = [

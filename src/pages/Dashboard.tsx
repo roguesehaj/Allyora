@@ -145,20 +145,20 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="max-w-2xl mx-auto p-4 space-y-4">
+    <div className="min-h-screen bg-gradient-soft pb-20">
+      <div className="max-w-2xl mx-auto p-4 space-y-5">
         {/* Header */}
-        <div className="py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">
+        <div className="py-6 flex items-center justify-between fade-in">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
               Welcome back, {user.quiz?.name || 'there'}! 👋
             </h1>
-            <p className="text-muted-foreground">Here is your cycle overview</p>
+            <p className="text-muted-foreground text-sm">Here is your cycle overview</p>
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
             onClick={() => navigate("/settings")}
           >
             <svg
@@ -181,29 +181,35 @@ const Dashboard = () => {
         {/* Health Alert */}
         {healthAlert && healthAlert.shouldAlert && (
           <Alert 
-            className={
+            className={`fade-in ${
               healthAlert.severity === 'high' 
-                ? 'border-destructive bg-destructive/10' 
+                ? 'border-destructive/50 bg-destructive/10 shadow-sm' 
                 : healthAlert.severity === 'medium'
-                ? 'border-warning bg-warning/10'
-                : 'border-primary bg-primary/10'
-            }
+                ? 'border-warning/50 bg-warning/10 shadow-sm'
+                : 'border-primary/50 bg-primary/10 shadow-sm'
+            }`}
           >
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>
+            <AlertTriangle className={`h-4 w-4 ${
+              healthAlert.severity === 'high' 
+                ? 'text-destructive' 
+                : healthAlert.severity === 'medium'
+                ? 'text-warning'
+                : 'text-primary'
+            }`} />
+            <AlertTitle className="font-semibold">
               {healthAlert.severity === 'high' 
                 ? 'Health Recommendation' 
                 : healthAlert.severity === 'medium'
                 ? 'Cycle Irregularity Notice'
                 : 'Cycle Update'}
             </AlertTitle>
-            <AlertDescription>{healthAlert.message}</AlertDescription>
+            <AlertDescription className="mt-1">{healthAlert.message}</AlertDescription>
             <div className="mt-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/book")}
-                className="rounded-full"
+                className="rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
               >
                 Book Doctor Consultation
               </Button>
@@ -246,7 +252,7 @@ const Dashboard = () => {
         {/* FAB */}
         <Button
           size="icon"
-          className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg"
+          className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-glow-lg hover:shadow-glow hover:scale-110 transition-all duration-300 z-40"
           onClick={handleAddEntry}
         >
           <Plus className="w-6 h-6" />

@@ -21,29 +21,31 @@ export function AnalyticsTile({ title, score, description }: AnalyticsTileProps)
   };
 
   return (
-    <Card className="p-4 space-y-3">
+    <Card className="p-5 space-y-4 card-hover border-border/50 bg-card/50">
       <div className="flex items-start justify-between">
-        <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
-        <div className={cn(getScoreColor(score))}>{getIcon(score)}</div>
+        <h4 className="text-sm font-semibold text-muted-foreground">{title}</h4>
+        <div className={cn("p-2 rounded-lg bg-background/50", getScoreColor(score))}>
+          {getIcon(score)}
+        </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className={cn("text-3xl font-bold", getScoreColor(score))}>
           {score}
-          <span className="text-lg text-muted-foreground">/100</span>
+          <span className="text-lg text-muted-foreground font-normal">/100</span>
         </div>
 
-        <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-secondary/60 rounded-full h-2.5 overflow-hidden shadow-inner">
           <div
             className={cn(
-              "h-full rounded-full transition-all",
+              "h-full rounded-full transition-all duration-500 shadow-sm",
               score >= 60 ? "bg-destructive" : score >= 30 ? "bg-warning" : "bg-success"
             )}
             style={{ width: `${score}%` }}
           />
         </div>
 
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
       </div>
     </Card>
   );
