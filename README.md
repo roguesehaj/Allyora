@@ -1,4 +1,4 @@
-# Allyora - Full Web Prototype
+# Allyora - Menstrual Health Tracking App
 
 **Allyora** is a mobile-first menstrual health tracking web application with AI-powered cycle predictions, personalized analytics, health articles, chat assistant, and teleconsult booking.
 
@@ -79,13 +79,13 @@ The app will be available at `http://localhost:8080`
    - Privacy policy information
    - Language selection (English/Hindi)
 
-## Quick Demo Access
+## Quick Access
 
-On the landing page, you'll see "Quick Demo Access" buttons to load pre-seeded demo users:
+On the landing page, you'll see "Quick Access" buttons to load pre-seeded sample users:
 
-- **demo_user_1**: Irregular cycles, PCOS, ≥3 period entries
-- **demo_user_2**: Regular cycles, 2 period entries
-- **demo_user_3**: New user, no entries
+- **Sample User 1**: Irregular cycles, PCOS, ≥3 period entries
+- **Sample User 2**: Regular cycles, 2 period entries
+- **Sample User 3**: New user, no entries
 
 ## Data Structure
 
@@ -120,7 +120,7 @@ src/
 │   ├── ArticleCard.tsx
 │   └── BottomNav.tsx   # 5-tab navigation
 ├── pages/              # Route pages
-│   ├── Index.tsx       # Landing with demo user selection
+│   ├── Index.tsx       # Landing page with sample user selection
 │   ├── Quiz.tsx        # Full quiz flow
 │   ├── Dashboard.tsx   # Main dashboard
 │   ├── Entries.tsx     # Period tracking
@@ -192,14 +192,14 @@ This project can be deployed to:
 
 ## Contributing
 
-This is a demo prototype. For production development:
+For production development:
 1. Review `notes-for-developer.md` (to be created)
 2. Check `api_contracts.md` for backend integration
-3. See `prototype-spec.md` for full component specs
+3. See component specifications in the codebase
 
 ## License
 
-Demo prototype for evaluation purposes.
+Evaluation purposes.
 
 ---
 

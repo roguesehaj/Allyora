@@ -1,6 +1,6 @@
 import type { DoctorArticle } from "@/types";
 
-export const demoDoctorArticles: DoctorArticle[] = [
+export const seedDoctorArticles: DoctorArticle[] = [
   {
     id: "doctor_article_1",
     title: "Endometriosis: A Comprehensive Guide to Diagnosis and Management",

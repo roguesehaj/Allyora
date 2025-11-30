@@ -7,14 +7,14 @@ import { Sparkles, Calendar, TrendingUp } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [demoUsers, setDemoUsers] = useState<any[]>([]);
+  const [sampleUsers, setSampleUsers] = useState<any[]>([]);
 
   useEffect(() => {
     const users = getAllUsers();
-    setDemoUsers(users.slice(0, 3));
+    setSampleUsers(users.slice(0, 3));
   }, []);
 
-  const handleLoadDemoUser = (userId: string) => {
+  const handleLoadSampleUser = (userId: string) => {
     setCurrentUser(userId);
     navigate("/dashboard");
   };
@@ -82,19 +82,19 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Demo Users */}
-        {demoUsers.length > 0 && (
+        {/* Sample Users */}
+        {sampleUsers.length > 0 && (
           <Card className="p-5 space-y-3 border-dashed border-primary/20 bg-secondary/30">
             <p className="text-xs text-muted-foreground text-center font-medium">
-              Quick Demo Access
+              Quick Access
             </p>
             <div className="space-y-2">
-              {demoUsers.map((user) => (
+              {sampleUsers.map((user) => (
                 <Button
                   key={user.user_id}
                   variant="outline"
                   className="w-full justify-start text-sm rounded-full hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
-                  onClick={() => handleLoadDemoUser(user.user_id)}
+                  onClick={() => handleLoadSampleUser(user.user_id)}
                 >
                   Load {user.user_id.replace('_', ' ')}
                 </Button>
@@ -104,7 +104,7 @@ const Index = () => {
         )}
 
         <p className="text-xs text-center text-muted-foreground">
-          Demo prototype • Your data stays on your device
+          Your data stays on your device
         </p>
       </div>
     </div>

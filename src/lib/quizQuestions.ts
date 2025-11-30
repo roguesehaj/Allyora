@@ -18,6 +18,13 @@ export interface QuizQuestion {
 
 export const quizQuestions: QuizQuestion[] = [
   {
+    id: "name",
+    question: "What's your name?",
+    questionHindi: "आपका नाम क्या है?",
+    type: "text",
+    required: true,
+  },
+  {
     id: "age",
     question: "How old are you?",
     questionHindi: "आपकी उम्र क्या है?",
@@ -153,7 +160,7 @@ export const quizQuestions: QuizQuestion[] = [
   {
     id: "consent",
     question:
-      "I consent to store my period and symptom data for personalized insights. Allyora will not sell your data. This is a demo - you can export or delete data anytime.",
+      "I consent to store my period and symptom data for personalized insights. Allyora will not sell your data. You can export or delete data anytime.",
     questionHindi:
       "मैं व्यक्तिगत अंतर्दृष्टि के लिए अपने पीरियड और लक्षण डेटा को संग्रहीत करने के लिए सहमति देता हूं। Allyora आपका डेटा नहीं बेचेगा। यह एक डेमो है - आप किसी भी समय डेटा निर्यात या हटा सकते हैं।",
     type: "checkbox",

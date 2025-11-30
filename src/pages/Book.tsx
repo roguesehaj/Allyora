@@ -76,7 +76,7 @@ const Book = () => {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Demo: This opens a Jitsi meeting room
+            This opens a Jitsi meeting room
           </p>
         </Card>
       </div>

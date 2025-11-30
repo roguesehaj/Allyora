@@ -1,6 +1,6 @@
 // src/lib/mockDb.ts
 import sampleDataset from '@/data/sample_dataset.json';
-import { demoDoctorArticles } from '@/data/doctorArticles';
+import { seedDoctorArticles } from '@/data/doctorArticles';
 import type {
   QuizResponse,
   Entry,
@@ -63,10 +63,10 @@ function initializeDb(): AllyoraData {
         if (!parsed.partners) parsed.partners = [];
         if (!parsed.partnerConnections) parsed.partnerConnections = [];
         
-        // Seed demo doctor articles if not already seeded
+        // Seed doctor articles if not already seeded
         const doctorArticlesSeeded = localStorage.getItem(DOCTOR_ARTICLES_SEEDED_KEY);
         if (!doctorArticlesSeeded && parsed.doctorArticles.length === 0) {
-          parsed.doctorArticles = [...demoDoctorArticles];
+          parsed.doctorArticles = [...seedDoctorArticles];
           saveDb(parsed);
           localStorage.setItem(DOCTOR_ARTICLES_SEEDED_KEY, 'true');
         }
@@ -81,8 +81,8 @@ function initializeDb(): AllyoraData {
       }
     }
     
-    // First time initialization - seed demo doctor articles
-    const data: AllyoraData = { users: [], entries: [], bookings: [], doctorArticles: [...demoDoctorArticles], partners: [], partnerConnections: [] };
+    // First time initialization - seed doctor articles
+    const data: AllyoraData = { users: [], entries: [], bookings: [], doctorArticles: [...seedDoctorArticles], partners: [], partnerConnections: [] };
     saveDb(data);
     localStorage.setItem(DOCTOR_ARTICLES_SEEDED_KEY, 'true');
     return data;
@@ -195,7 +195,7 @@ export function createBooking(user_id: string, booking: Omit<Booking, 'booking_i
     ...booking,
     booking_id: `booking_${Date.now()}`,
     user_id,
-    join_url: `https://meet.jit.si/AllyoraDemo_${randomSuffix}`,
+    join_url: `https://meet.jit.si/Allyora_${randomSuffix}`,
     created_at: new Date().toISOString(),
   };
   data.bookings.push(newBooking);
@@ -286,19 +286,19 @@ export function rejectDoctorArticle(articleId: string): void {
   saveDb(data);
 }
 
-// Ensure demo doctor articles are seeded
+// Ensure doctor articles are seeded
 export function ensureDoctorArticlesSeeded(): void {
   const data = getData();
   const doctorArticlesSeeded = localStorage.getItem(DOCTOR_ARTICLES_SEEDED_KEY);
   
   if (!doctorArticlesSeeded) {
-    // Check if any demo articles already exist
-    const hasDemoArticles = demoDoctorArticles.some(demo => 
-      data.doctorArticles.some(existing => existing.id === demo.id)
+    // Check if any seed articles already exist
+    const hasSeedArticles = seedDoctorArticles.some(seed => 
+      data.doctorArticles.some(existing => existing.id === seed.id)
     );
     
-    if (!hasDemoArticles) {
-      data.doctorArticles = [...data.doctorArticles, ...demoDoctorArticles];
+    if (!hasSeedArticles) {
+      data.doctorArticles = [...data.doctorArticles, ...seedDoctorArticles];
       saveDb(data);
       localStorage.setItem(DOCTOR_ARTICLES_SEEDED_KEY, 'true');
     } else {

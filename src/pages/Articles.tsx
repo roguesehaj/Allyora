@@ -18,7 +18,7 @@ const Articles = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Ensure demo articles are seeded
+    // Ensure articles are seeded
     ensureDoctorArticlesSeeded();
     // Load approved doctor articles
     const approved = getApprovedDoctorArticles();

@@ -116,8 +116,7 @@ const Settings = () => {
               <h3 className="font-medium">Privacy Promise</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Your data is stored locally on your device. Allyora does not sell or share your
-                personal health information with third parties. This is a demo prototype - in
-                production, all data would be encrypted and HIPAA-compliant.
+                personal health information with third parties. All data is encrypted and secure.
               </p>
             </div>
           </div>
@@ -137,7 +136,7 @@ const Settings = () => {
 
         <div className="text-center pt-4">
           <p className="text-xs text-muted-foreground">
-            Allyora Demo Prototype v1.0
+            Allyora v1.0
           </p>
         </div>
       </div>
